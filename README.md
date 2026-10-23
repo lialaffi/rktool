@@ -31,7 +31,7 @@ Optional packages: `ggplot2` (for `plot_rk_density()`) and `ggtern`
 ## Workflow
 
 The package includes an example dataset, `data_rktool` (event onsets of
-17 individuals in 202 recordings, see `?data_rktool`), so the whole workflow can
+8 individuals in 183 recordings, see `?data_rktool`), so the whole workflow can
 be run as is:
 
 ```r

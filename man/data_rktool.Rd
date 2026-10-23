@@ -5,10 +5,10 @@
 \alias{data_rktool}
 \title{Example dataset of event onsets}
 \format{
-A data frame with 16294 rows and 4 columns:
+A data frame with 11983 rows and 4 columns:
 \describe{
-  \item{file_id}{Recording identifier (\code{"file_1"} ... \code{"file_202"}).}
-  \item{ind_id}{Individual identifier (\code{"ind1"} ... \code{"ind17"}).}
+  \item{file_id}{Recording identifier (\code{"file_1"} ... \code{"file_183"}).}
+  \item{ind_id}{Individual identifier (\code{"ind1"} ... \code{"ind8"}).}
   \item{sex}{Sex of the individual: \code{"female"} or \code{"male"}.}
   \item{onset}{Onset time of the event, in seconds from the start of the
     recording.}
@@ -18,8 +18,8 @@ A data frame with 16294 rows and 4 columns:
 data_rktool
 }
 \description{
-Onset times of events annotated in 202 recordings, for 17 individuals
-(8 females, 9 males). It is a real dataset meant to run the examples of
+Onset times of events annotated in 183 recordings, for 8 individuals
+(4 females, 4 males). It is a real dataset meant to run the examples of
 the package: starting from the onsets, the whole workflow can be
 reproduced (\code{\link{calculate_tk}}
 -> \code{\link{calculate_rk}} -> \code{\link{classify_rk}} ->
@@ -30,7 +30,7 @@ reproduced (\code{\link{calculate_tk}}
 Rows are not sorted: \code{\link{calculate_tk}} sorts them by onset
 within each group.
 
-Recordings and individuals are combined in 349 file x individual
+Recordings and individuals are combined in 326 file x individual
 sequences, some of them very short (a few events, or a single one, which
 gives no interval).
 }
