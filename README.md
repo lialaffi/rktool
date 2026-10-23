@@ -12,16 +12,21 @@ and `"off"` (outer parts), e.g. `"1_2_on"` / `"1_2_off"`.
 
 ## Installation
 
+Install the development version from GitHub:
+
 ```r
-# from a local folder
-install.packages("path/to/rktool", repos = NULL, type = "source")
-# or, during development
-devtools::load_all()
+# install.packages("remotes")
+remotes::install_github("lialaffi/rktool")
 
 # with the vignette (a step-by-step guide to the whole workflow)
-devtools::install("path/to/rktool", build_vignettes = TRUE)
+remotes::install_github("lialaffi/rktool", build_vignettes = TRUE)
 vignette("rktool")
 ```
+
+or, equivalently, with pak: `pak::pak("lialaffi/rktool")`.
+
+Optional packages: `ggplot2` (for `plot_rk_density()`) and `ggtern`
+(for `plot_rk_ternary()`).
 
 ## Workflow
 
