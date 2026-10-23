@@ -1,0 +1,35 @@
+Package: rktool
+Type: Package
+Title: Rhythmic Categories from Generic Event Sequences
+Version: 0.1.0
+Authors@R: 
+    person("Lia", "Laffi", email = "lia.laffi01@gmail.com", role = c("aut", "cre"))
+Description: Tools to compute rhythmic ratios (rk = tk / (tk + tk+1)) from
+    onsets or inter-onset intervals of any sequence of events, classify them
+    into the "on"/"off" bins of rhythmic categories (1_n, 1_1, n_1), count
+    the bins per group, normalize the counts against a simulated null
+    distribution of the intervals (or against the bin width), find the density
+    peaks of rk, and test the significance of rhythmic categories across repeated
+    normalizations.
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+Depends: R (>= 4.1.0)
+Imports:
+    dplyr,
+    graphics,
+    grDevices,
+    rlang,
+    stats,
+    tidyr,
+    tidyselect
+Suggests:
+    testthat (>= 3.0.0),
+    ggplot2 (>= 3.0.0),
+    ggtern,
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
+Config/testthat/edition: 3
+Roxygen: list(markdown = FALSE)
+Config/roxygen2/version: 8.1.0

@@ -1,0 +1,423 @@
+---
+title: "Rhythmic analysis with rktool"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Rhythmic analysis with rktool}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 4
+)
+has_ggplot2 <- requireNamespace("ggplot2", quietly = TRUE)
+has_ggtern  <- has_ggplot2 && requireNamespace("ggtern", quietly = TRUE)
+```
+
+`rktool` analyses the rhythm of any sequence of events (calls, notes,
+footsteps, keystrokes...) through **rhythmic ratios**. Starting from the
+onset times of the events, it computes the intervals between them, turns
+each pair of consecutive intervals into a ratio, classifies the ratios into
+rhythmic categories and tests whether some categories occur more often than
+expected by chance.
+
+This vignette walks through the whole workflow on the example dataset
+shipped with the package:
+
+1. `calculate_tk()`: intervals from onsets;
+2. `calculate_rk()`: rhythmic ratios from intervals;
+3. `classify_rk()`: rhythmic bins of each ratio;
+4. `count_rk()`: bin counts per group;
+5. `compute_null_distributions()` / `simulate_null_runs()`: bin
+   proportions expected under a null model;
+6. `normalize_rk_counts()`: counts normalized against the null model (or
+   the bin width);
+7. `test_peaks()`: "on" vs "off" tests for each category;
+8. `find_rk_peaks()`, `plot_rk_density()`, `plot_rk_ternary()`: exploration
+   and plots.
+
+```{r setup}
+library(rktool)
+```
+
+## Key concepts
+
+Given an interval $t_k$ and the following interval $t_{k+1}$ of the same
+sequence, the **rhythmic ratio** is
+
+$$r_k = \frac{t_k}{t_k + t_{k+1}}, \qquad 0 < r_k < 1.$$
+
+Isochronous rhythms (two equal intervals) give $r_k = 0.5$; a short interval
+followed by one twice as long gives $r_k = 1/3$, and so on.
+
+- A **category** (or peak) is an integer ratio: `"1_1"` (1:1, centred on
+  0.5), `"1_n"` (centred on $1/(n+1)$, e.g. `"1_2"` at 1/3) and `"n_1"`
+  (centred on $1 - 1/(n+1)$, e.g. `"2_1"` at 2/3).
+- Each category is split into two **bins**: `"on"`, the central part close
+  to the integer ratio, and `"off"`, the two outer parts. Labels look like
+  `"1_2_on"` / `"1_2_off"`.
+
+A rhythm that really is organised around a category shows more `on` than
+`off` values for it, once the different chance level of each bin has been
+taken into account.
+
+## The example data
+
+```{r data-info, include = FALSE}
+n_sex <- table(unique(rk_example[c("ind_id", "sex")])$sex)
+```
+
+`rk_example` contains the onset times (in seconds) of
+`r format(nrow(rk_example), big.mark = ",")` events annotated in
+`r length(unique(rk_example$file_id))` recordings, for
+`r length(unique(rk_example$ind_id))` individuals
+(`r paste(n_sex, names(n_sex), collapse = ", ")`).
+
+```{r data}
+head(rk_example)
+str(rk_example)
+```
+
+Each temporal sequence is a recording x individual combination, so in all
+the steps below `by = c(file_id, ind_id)`. Column arguments accept bare
+names (`file_id`) or strings (`"file_id"`), and those that accept several
+columns take `c(...)`.
+
+## 1. Intervals: `calculate_tk()`
+
+`calculate_tk()` sorts the rows by onset within each sequence and computes
+`tk = onset - previous onset`. The first interval of each sequence is `NA`,
+because it has no previous onset.
+
+```{r tk}
+y <- calculate_tk(rk_example, onset_col = onset, by = c(file_id, ind_id))
+head(y[c("file_id", "ind_id", "onset", "tk")])
+summary(y$tk)
+```
+
+If your data already contain the intervals, skip this step.
+
+## 2. Rhythmic ratios: `calculate_rk()`
+
+`calculate_rk()` computes `rk` between each interval and the next one of the
+same sequence. The last interval of a sequence has no successor, so its
+`rk` is `NA`.
+
+```{r rk}
+y <- calculate_rk(y, tk_col = tk, by = c(file_id, ind_id))
+summary(y$rk)
+```
+
+Long pauses between bouts are usually not part of the rhythm. Use `tk_max`
+to avoid computing ratios that involve an interval longer than a
+threshold (here 5 s):
+
+```{r rk-tkmax}
+y2 <- calculate_rk(y, tk_col = tk, by = c(file_id, ind_id), tk_max = 5,
+                   rk_name = "rk_5s")
+c(all = sum(!is.na(y2$rk)), tk_max_5 = sum(!is.na(y2$rk_5s)))
+```
+
+The distributions of `tk` and `rk` can be inspected with
+`plot_rk_density()`. The `n_max` argument adds dashed lines at the centres
+of the categories:
+
+```{r density, eval = has_ggplot2}
+plot_rk_density(y, tk_max = 5, n_max = 9)
+```
+
+```{r density-rk, eval = has_ggplot2}
+plot_rk_density(y, what = "rk",
+                peaks = c("1_1"))
+```
+
+## 3. Classification: `classify_rk()`
+
+`classify_rk()` assigns each ratio to a bin, using all the categories from
+`1_n_max` to `n_max_1`. Ratios more extreme than that become `NA`. The
+default is `n_max = 5` (categories `1_5` ... `5_1`). In this vignette we
+analyse the categories from `1_9` to `9_1`, so we set `n_max = 9`:
+
+```{r classify}
+y$bins <- classify_rk(y$rk, n_max = 9)
+table(y$bins, useNA = "ifany")
+```
+
+To work only on some categories, possibly not contiguous, pass `peaks`.
+Ratios outside them become `NA`:
+
+```{r classify-peaks}
+table(classify_rk(y$rk, peaks = c("1_2", "1_1", "2_1")), useNA = "ifany")
+```
+
+The bins do not all have the same width: `off` bins are wider than `on`
+bins, and categories become narrower as `n` grows. Raw counts therefore
+cannot be compared across bins directly, which is why the counts are
+normalized (step 5).
+
+## 4. Counts per group: `count_rk()`
+
+`count_rk()` counts the bins within each group. Here the counts are pooled
+over all the recordings of each individual (`by = ind_id`). In the wide
+format (the default) there is one row per group and one column per bin.
+`keep_cols` carries along columns that are constant within the group, such
+as the sex of the individual.
+
+```{r count}
+b <- count_rk(y, by = c(ind_id), bin_col = bins, keep_cols = sex)
+b[, 1:9]
+```
+
+`format = "long"` gives one row per group x bin instead:
+
+```{r count-long}
+b_long <- count_rk(y, by = c(ind_id), bin_col = bins,
+                   keep_cols = sex, format = "long")
+head(b_long)
+```
+
+## 5. Null model and normalization
+
+### The null distribution
+
+Even a random sequence of intervals produces ratios in every bin, with
+proportions that depend on the bin widths and on the distribution of the
+intervals. `compute_null_distributions()` estimates this baseline, following
+Jadoul et al. (2025):
+
+1. fits a distribution to the observed `tk` (`"uniform"`, `"exponential"`,
+   `"halfnormal"` or `"lognormal"`);
+2. simulates pairs of independent intervals from it;
+3. computes and classifies their `rk`;
+4. returns the proportion of simulated pairs in each bin.
+
+With `type_col` a separate null model is fitted for each group (here, each
+sex). `plot = TRUE` compares the simulated and observed `tk` and shows the
+simulated `rk`. The null model must cover the same categories as the
+classification, so `n_max = 9` is passed here too. `n_sim = 1e6` (the
+default) simulated pairs give stable proportions even for the narrowest
+bins.
+
+```{r null, fig.height = 6}
+norm_df <- compute_null_distributions(
+  y, tk_col = tk, type_col = sex, distribution = "lognormal",
+  n_max = 9, n_sim = 1e6, seed = 1, plot = TRUE
+)
+head(norm_df)
+attr(norm_df, "params")
+```
+
+### Comparing the null distributions
+
+The choice of the null distribution matters: each one implies a different
+baseline for the bins. Below, the four available null models are fitted on
+the intervals of both sexes together (no `type_col`). For each one, the
+left panel compares the simulated `tk` with the observed `tk` (dashed red
+line), and the right panel shows the resulting simulated `rk`.
+
+```{r null-all, fig.width = 8, fig.height = 3.5, results = "hide"}
+dists <- c("uniform", "exponential", "halfnormal", "lognormal")
+null_all <- lapply(stats::setNames(dists, dists), function(d) {
+  compute_null_distributions(y, tk_col = tk, distribution = d,
+                             n_max = 9, n_sim = 1e6, seed = 1, plot = TRUE)
+})
+```
+
+The estimated parameters of each model:
+
+```{r null-all-params}
+do.call(rbind, lapply(dists, function(d) {
+  cbind(distribution = d, attr(null_all[[d]], "params"))
+}))
+```
+
+Expected proportion of each bin under the four models (one column per
+model):
+
+```{r null-all-table}
+null_tab <- data.frame(bin = null_all[[1]]$bin,
+                       sapply(null_all, `[[`, "normalization_constant"))
+null_tab[-1] <- round(null_tab[-1], 4)
+null_tab
+```
+
+```{r null-all-plot, fig.height = 4.5}
+cols <- c("grey40", "darkorange", "steelblue", "firebrick")
+graphics::matplot(as.matrix(null_tab[dists]), type = "o", pch = 16, lty = 1,
+                  col = cols, xaxt = "n", xlab = "", ylab = "expected proportion",
+                  main = "Bin proportions under each null model")
+graphics::axis(1, at = seq_len(nrow(null_tab)), labels = null_tab$bin,
+               las = 2, cex.axis = 0.7)
+graphics::legend("topright", legend = dists, col = cols, lty = 1, pch = 16,
+                 bty = "n", cex = 0.8)
+```
+
+```{r null-all-info, include = FALSE}
+p11 <- unlist(null_tab[null_tab$bin == "1_1_on", dists])
+```
+
+The models mostly disagree around the centre: the expected proportion of
+`1_1_on`, for instance, ranges from `r round(min(p11), 3)`
+(`r names(which.min(p11))`) to `r round(max(p11), 3)`
+(`r names(which.max(p11))`). Since the observed counts are divided by these
+proportions, the choice of the null model directly affects the evidence for
+the `1_1` category. Choose the model whose simulated `tk` best matches the
+observed `tk` in the panels above: here the lognormal one, used in the rest
+of this vignette.
+
+### Normalizing the counts
+
+`normalize_rk_counts()` divides each count by the null proportion of its
+bin, matching the constants to the rows by `type_col`. The result says how
+many times more (or less) often a bin occurs than expected by chance.
+
+```{r normalize}
+b_norm <- normalize_rk_counts(b, norm_df, type_col = sex)
+b_norm[c("ind_id", "sex", "1_1_on", "1_1_on_norm",
+         "1_1_off", "1_1_off_norm")]
+```
+
+A simpler alternative, which needs no null model, divides by the width of
+each bin in rk units (`method = "width"`), giving a density-like count:
+
+```{r normalize-width}
+b_width <- normalize_rk_counts(b, method = "width")
+round(unlist(b_width[1, c("1_1_on_norm", "1_1_off_norm")]), 1)
+```
+
+The long format is supported too, with `format = "long"` and `bin_col`:
+
+```{r normalize-long}
+head(normalize_rk_counts(b_long, norm_df, type_col = sex,
+                         format = "long", bin_col = bins))
+```
+
+## 6. Testing the categories: `test_peaks()`
+
+For each category, `test_peaks()` runs a paired Wilcoxon test of the
+normalized `on` count against the normalized `off` count, across the rows
+of `counts` (here, the individuals).
+
+A single null simulation contains Monte Carlo noise, so the test is repeated
+over many independent null models generated by `simulate_null_runs()`. The
+summary reports how many of the runs give a significant result. A category
+can be considered robust when it is significant in (nearly) all runs. Here
+we use 20 runs to keep the build time short; in a real analysis use at
+least the default (`runs = 100`).
+
+All the categories from `1_9` to `9_1` are tested (`n_max = 9`, the same
+used in `classify_rk()`). Males and females are analysed together: without
+`type_col`, a single null model is fitted on all the intervals and each
+category is tested once, on all the individuals.
+
+```{r runs-all}
+norm_runs_all <- simulate_null_runs(y, tk_col = tk,
+                                    distribution = "lognormal", n_max = 9,
+                                    n_sim = 1e6, runs = 20, seed = 1,
+                                    verbose = FALSE)
+res_all <- test_peaks(b, norm_runs_all, verbose = FALSE)
+res_all$summary
+```
+
+```{r test-info, include = FALSE}
+robust <- res_all$summary[!is.na(res_all$summary$prop) & res_all$summary$prop >= 0.95, ]
+robust_txt <- if (nrow(robust) == 0) {
+  "no category is significant in at least 95% of the runs"
+} else {
+  paste0("the categories significant in at least 95% of the runs are ",
+         paste0(robust$test, " (", robust$sig, "/", robust$n_run, ")",
+                collapse = "; "))
+}
+```
+
+`sig` is the number of runs with `p < alpha` (0.05 by default), and
+`perc` / `prop` express it as a percentage / proportion of the valid runs
+(`n_run`). In this example `r robust_txt`. A category significant in only
+a fraction of the runs is not a robust result, because it depends on the
+particular null simulation.
+
+`$p_values` contains the p-value of every run x category:
+
+```{r test-p}
+head(res_all$p_values)
+```
+
+Use `alternative = "less"` (on < off) or `"two.sided"` to test other
+hypotheses. With `type_col = sex` (in both `simulate_null_runs()` and
+`test_peaks()`) a null model is fitted and the tests are run separately for
+each sex; `by` splits the tests by other columns as well.
+
+## 7. Locating the peaks: `find_rk_peaks()`
+
+`find_rk_peaks()` estimates the density of `rk` once and returns, for each
+category, the position of the density maximum within the category's range.
+It is useful to check whether the observed peaks fall close to the integer
+ratios:
+
+```{r peaks}
+pk <- find_rk_peaks(y$rk, peaks = c("1_1"))
+pk
+```
+
+```{r peaks-info, include = FALSE}
+# a maximum within 1% of the range width from an edge is not a local peak
+tol <- 0.01 * (pk$range_max - pk$range_min)
+at_edge <- pk$peak_x - pk$range_min < tol | pk$range_max - pk$peak_x < tol
+inner_txt <- if (any(!at_edge)) {
+  paste0("Here ", paste0(pk$peak[!at_edge], " (", round(pk$peak_x[!at_edge], 3), ")",
+                         collapse = ", "),
+         " has a real peak inside its range")
+} else {
+  "Here no category has a peak inside its range"
+}
+edge_txt <- if (any(at_edge)) {
+  paste0(", while for ", paste(pk$peak[at_edge], collapse = ", "),
+         " the maximum lies at the edge")
+} else ""
+```
+
+Look at `peak_x` together with `range_min` / `range_max`. When the maximum
+lies at the edge of the range, the density keeps rising or falling across
+the whole category. There is then no local peak inside it: the reported
+value only marks the side the density is coming from. Only a `peak_x` well
+inside the range indicates a real mode close to the category.
+`r inner_txt``r edge_txt`.
+
+## 8. Three consecutive intervals: `plot_rk_ternary()`
+
+`rk` looks at two intervals at a time. `plot_rk_ternary()` looks at three
+consecutive intervals `(tk1, tk2, tk3)` and places each triplet in a ternary
+diagram according to the relative duration of the three. Isochronous
+triplets fall in the centre. This plot requires the **ggtern** package.
+
+```{r ternary, eval = has_ggtern, message = FALSE, warning = FALSE}
+plot_rk_ternary(y, tk_col = tk, by = c(file_id, ind_id),
+                order_col = onset, tk_max = 5)
+```
+
+## Practical notes
+
+- **Simultaneous onsets.** Two events with the same onset give `tk = 0`,
+  hence `rk = 0` or `rk = 1`, which fall outside every category (`NA` in
+  `classify_rk()`). `compute_null_distributions()` ignores intervals
+  `<= 0` when fitting the null model.
+- **Negative intervals.** If you supply your own `tk`, `calculate_rk()`
+  warns about negative values and does not compute the ratios involving
+  them.
+- **Choosing `n_max`.** Use the same `n_max` in `classify_rk()` and in the
+  null model. Bins beyond the `n_max` of the null model have no
+  normalization constant, and `test_peaks()` reports the categories it
+  could not test.
+- **Few data per group.** `compute_null_distributions()` warns when a
+  `type_col` group has fewer than 10 intervals, since its null model is
+  then poorly estimated.
+
+## Reference
+
+Jadoul, Y., Tufarelli, T., Coissac, C., Gamba, M., & Ravignani, A. (2025).
+Hidden assumptions of integer ratio analyses in bioacoustics and music.
+*Annals of the New York Academy of Sciences*, 1553(1), 363-378.

@@ -1,0 +1,11 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+.DS_Store
+Thumbs.db
+*.Rcheck/
+rktool_*.tar.gz
+inst/doc
+doc/
+Meta/
