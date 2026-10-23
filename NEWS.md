@@ -5,3 +5,4 @@
   `normalize_rk_counts()`, `test_peaks()`, `find_rk_peaks()`,
   `plot_rk_density()`, `plot_rk_ternary()`.
 * Example dataset `data_rktool`.
+* Available on GitHub: `remotes::install_github("lialaffi/rktool")`.
