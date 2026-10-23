@@ -122,7 +122,7 @@
 #' result is a count per unit of rk (a density-like measure).
 #'
 #' @examples
-#' y <- calculate_tk(rk_example, onset_col = onset, by = c(file_id, ind_id))
+#' y <- calculate_tk(data_rktool, onset_col = onset, by = c(file_id, ind_id))
 #' y <- calculate_rk(y, tk_col = tk, by = c(file_id, ind_id))
 #' y$bins <- classify_rk(y$rk)
 #'

@@ -30,15 +30,19 @@ Optional packages: `ggplot2` (for `plot_rk_density()`) and `ggtern`
 
 ## Workflow
 
-The package includes an example dataset, `rk_example` (event onsets of
-17 individuals in 202 recordings, see `?rk_example`), so the whole workflow can
+The package includes an example dataset, `data_rktool` (event onsets of
+17 individuals in 202 recordings, see `?data_rktool`), so the whole workflow can
 be run as is:
 
 ```r
 library(rktool)
 
+# load the example dataset
+data(data_rktool)
+head(data_rktool)
+
 # 1. intervals tk from onsets (skip if tk are already computed), then rk
-y <- calculate_tk(rk_example, onset_col = onset, by = c(file_id, ind_id))
+y <- calculate_tk(data_rktool, onset_col = onset, by = c(file_id, ind_id))
 y <- calculate_rk(y, tk_col = tk, by = c(file_id, ind_id))
 
 # 2. classification into bins (1_5_off ... 1_1_on ... 5_1_off)
@@ -78,4 +82,4 @@ find_rk_peaks(y$rk, peaks = c("1_1", "1_2", "2_1"))
 | `find_rk_peaks()` | mode of the rk density for each category |
 | `plot_rk_density()` | density of tk and/or rk, with facets and category reference lines |
 | `plot_rk_ternary()` | ternary plot of triplets of consecutive tk (requires ggtern) |
-| `rk_example` | example dataset of event onsets |
+| `data_rktool` | example dataset of event onsets |

@@ -15,7 +15,7 @@ Typical workflow: \code{\link{calculate_tk}} -> \code{\link{calculate_rk}} ->
 \code{\link{classify_rk}} -> \code{\link{count_rk}} ->
 \code{\link{compute_null_distributions}} ->
 \code{\link{normalize_rk_counts}} -> \code{\link{test_peaks}}.
-The example dataset \code{\link{rk_example}} can be used to run it.
+The example dataset \code{\link{data_rktool}} can be used to run it.
 }
 \section{Terminology}{
 
@@ -31,6 +31,26 @@ Column arguments accept a bare name or a string; those marked
 \code{c(...)} also accept several columns (any tidyselect expression).
 }
 
+\examples{
+# load the example dataset
+data(data_rktool)
+head(data_rktool)
+
+y <- calculate_tk(data_rktool, onset_col = onset, by = c(file_id, ind_id))
+y <- calculate_rk(y, tk_col = tk, by = c(file_id, ind_id))
+y$bins <- classify_rk(y$rk)
+b <- count_rk(y, by = c(file_id, ind_id, sex), bin_col = bins)
+head(b)
+
+}
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://github.com/lialaffi/rktool}
+  \item Report bugs at \url{https://github.com/lialaffi/rktool/issues}
+}
+
+}
 \author{
 \strong{Maintainer}: Lia Laffi \email{lia.laffi01@gmail.com}
 

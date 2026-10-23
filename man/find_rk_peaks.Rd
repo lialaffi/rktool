@@ -72,7 +72,7 @@ within each category's range. Ranges use the same breakpoints as
 classification of the same \code{rk} vector.
 }
 \examples{
-y <- calculate_tk(rk_example, onset_col = onset, by = c(file_id, ind_id))
+y <- calculate_tk(data_rktool, onset_col = onset, by = c(file_id, ind_id))
 y <- calculate_rk(y, tk_col = tk, by = c(file_id, ind_id))
 
 # peak of a single category

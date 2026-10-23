@@ -109,7 +109,7 @@ values, since the parameters (and hence the null distribution) are then
 poorly estimated.
 }
 \examples{
-y <- calculate_tk(rk_example, onset_col = onset, by = c(file_id, ind_id))
+y <- calculate_tk(data_rktool, onset_col = onset, by = c(file_id, ind_id))
 
 # one null distribution per sex (n_sim kept small for a quick example)
 norm_df <- compute_null_distributions(

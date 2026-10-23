@@ -62,7 +62,7 @@
 #'
 #' @examples
 #' if (requireNamespace("ggplot2", quietly = TRUE)) {
-#'   y <- calculate_tk(rk_example, onset_col = onset, by = c(file_id, ind_id))
+#'   y <- calculate_tk(data_rktool, onset_col = onset, by = c(file_id, ind_id))
 #'   y <- calculate_rk(y, tk_col = tk, by = c(file_id, ind_id))
 #'
 #'   print(plot_rk_density(y, tk_max = 2))               # tk and rk

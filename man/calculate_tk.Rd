@@ -35,7 +35,7 @@ needed.
 }
 \examples{
 # intervals within each recording x individual
-y <- calculate_tk(rk_example, onset_col = onset, by = c(file_id, ind_id))
+y <- calculate_tk(data_rktool, onset_col = onset, by = c(file_id, ind_id))
 head(y)
 
 # then the rhythmic ratios

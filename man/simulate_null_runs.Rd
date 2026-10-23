@@ -83,7 +83,7 @@ simulation, so they are shown for the first run only and suppressed in
 the following ones.
 }
 \examples{
-y <- calculate_tk(rk_example, onset_col = onset, by = c(file_id, ind_id))
+y <- calculate_tk(data_rktool, onset_col = onset, by = c(file_id, ind_id))
 
 # 10 runs with few simulated pairs, for a quick example (in a real
 # analysis use at least the defaults, runs = 100 and n_sim = 1e5)

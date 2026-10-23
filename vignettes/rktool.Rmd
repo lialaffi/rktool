@@ -68,18 +68,18 @@ taken into account.
 ## The example data
 
 ```{r data-info, include = FALSE}
-n_sex <- table(unique(rk_example[c("ind_id", "sex")])$sex)
+n_sex <- table(unique(data_rktool[c("ind_id", "sex")])$sex)
 ```
 
-`rk_example` contains the onset times (in seconds) of
-`r format(nrow(rk_example), big.mark = ",")` events annotated in
-`r length(unique(rk_example$file_id))` recordings, for
-`r length(unique(rk_example$ind_id))` individuals
+`data_rktool` contains the onset times (in seconds) of
+`r format(nrow(data_rktool), big.mark = ",")` events annotated in
+`r length(unique(data_rktool$file_id))` recordings, for
+`r length(unique(data_rktool$ind_id))` individuals
 (`r paste(n_sex, names(n_sex), collapse = ", ")`).
 
 ```{r data}
-head(rk_example)
-str(rk_example)
+head(data_rktool)
+str(data_rktool)
 ```
 
 Each temporal sequence is a recording x individual combination, so in all
@@ -94,7 +94,7 @@ columns take `c(...)`.
 because it has no previous onset.
 
 ```{r tk}
-y <- calculate_tk(rk_example, onset_col = onset, by = c(file_id, ind_id))
+y <- calculate_tk(data_rktool, onset_col = onset, by = c(file_id, ind_id))
 head(y[c("file_id", "ind_id", "onset", "tk")])
 summary(y$tk)
 ```

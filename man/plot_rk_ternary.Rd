@@ -78,7 +78,7 @@ Requires the \pkg{ggtern} package (and \pkg{ggplot2}).
 \examples{
 \donttest{
 if (requireNamespace("ggtern", quietly = TRUE)) {
-  y <- calculate_tk(rk_example, onset_col = onset, by = c(file_id, ind_id))
+  y <- calculate_tk(data_rktool, onset_col = onset, by = c(file_id, ind_id))
 
   # triplets within each recording x individual, intervals <= 2 s
   print(plot_rk_ternary(y, tk_col = tk, by = c(file_id, ind_id),

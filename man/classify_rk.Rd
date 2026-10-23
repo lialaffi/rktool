@@ -55,7 +55,7 @@ Category \code{n_1} uses \code{1 - 1/(n + c)}; \code{1_1} uses the
 }
 \examples{
 # on the example dataset
-y <- calculate_tk(rk_example, onset_col = onset, by = c(file_id, ind_id))
+y <- calculate_tk(data_rktool, onset_col = onset, by = c(file_id, ind_id))
 y <- calculate_rk(y, tk_col = tk, by = c(file_id, ind_id))
 y$bins <- classify_rk(y$rk)
 table(y$bins)
