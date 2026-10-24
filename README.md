@@ -16,11 +16,13 @@ Install the development version from GitHub:
 
 ```r
 # install.packages("remotes")
-remotes::install_github("lialaffi/rktool")
-
 # with the vignette (a step-by-step guide to the whole workflow)
 remotes::install_github("lialaffi/rktool", build_vignettes = TRUE)
 vignette("rktool")
+
+# without the vignette the vignette
+remotes::install_github("lialaffi/rktool")
+
 ```
 
 or, equivalently, with pak: `pak::pak("lialaffi/rktool")`.
